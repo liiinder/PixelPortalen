@@ -1,0 +1,104 @@
+﻿@using PixelPortalen.Shared.Models
+@using PixelPortalen.Frontend.Services
+@inject ToastService ToastService
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<div id="@("details" + Product.Id)" 
+     class="product-card d-flex align-items-start p-3 mb-3 t flex-wrap flex-md-nowrap"
+     style="cursor: pointer;" @onclick="GoToProductDetail">
+
+    <div style="flex: 0 0 150px;">
+        @if (!string.IsNullOrEmpty(Product.ImagePath))
+        {
+            <img src="@Product.ImagePath" alt="Image of @Product.Name" class="img-fluid rounded" />
+        }
+        else
+        {
+            <img src="https://pixelportalen-gamlestaden-api-c4arc7djcbf4hwab.westeurope-01.azurewebsites.net/images/products/NotFound.jpg" alt="Placeholder image" class="img-fluid rounded" />
+        }
+    </div>
+
+    <div style="flex: 1;">
+        <h5 class="mb-1 pp-font">@Product.Name</h5>
+        <div class="">
+            <p class="mb-1">@Product.ShortDescription</p>
+        </div>
+        @foreach (var genre in Product.Genres)
+        {
+            <span class="btn btn-sm btn-info text-light me-2 mt-3 pp-genre">
+                @genre.Name
+            </span>
+        }
+    </div>
+
+    <div style="flex: 0 0 180px;" class="text-end mt-3 mt-md-0">
+        <p class="mb-1"><strong>Pris:</strong> @Product.Price.ToString("C2", new System.Globalization.CultureInfo("sv-SE"))</p>
+
+        @if (Product.Stock is null)
+        {
+            <p class="text-info mb-2">Digital kopia</p>
+        }
+        else if (Product.Stock > 0)
+        {
+            <p class="text-light mb-2">Lagersaldo: @Product.Stock st</p>
+        }
+        else
+        {
+            <p class="text-danger mb-2">Slutsåld</p>
+        }
+
+        <button id="@("Add" + Product.Id + "ToCart")" class="btn-secondary btn-sm btn"
+                @onclick:stopPropagation @onclick="AddToCart"
+                disabled="@(Product.Stock <= 0 || IsOutOfStockInCart())">
+            Köp nu
+        </button>
+
+        <AuthorizeView Roles="Admin">
+            <Authorized>
+                <button id="@("Edit" + Product.Name)" class="btn btn-sm ms-2"
+                        @onclick:stopPropagation
+                        @onclick="NavigateToEdit">Ändra</button>
+            </Authorized>
+        </AuthorizeView>
+
+    </div>
+</div>
+
+@code {
+    [Inject] public CartService CartService { get; set; }
+    [Parameter]
+    public Product Product { get; set; }
+
+    // private bool showFullDescription = false;
+    // private string DescriptionClass => showFullDescription ? "description-expanded" : "description-collapsed";
+
+    // private void ToggleDescription()
+    // {
+    //     showFullDescription = !showFullDescription;
+    // }
+
+    private void AddToCart()
+    {
+        CartService.AddToCart(Product);
+
+        ToastService.ShowToast($"{Product.Name} tillagt i kundvagnen!");
+    }
+
+    private void NavigateToEdit()
+    {
+        Navigation.NavigateTo($"/editproduct/{Product.Id}");
+    }
+    private bool IsOutOfStockInCart()
+    {
+        if (Product.Stock == null) return false;
+
+        var item = CartService.GetCartItems().FirstOrDefault(i => i.Product.Id == Product.Id);
+        return item != null && item.Quantity >= Product.Stock;
+    }
+
+    private void GoToProductDetail()
+    {
+        Navigation.NavigateTo($"/products/{Product.Id}");
+    }
+}

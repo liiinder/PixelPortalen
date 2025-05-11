@@ -1,0 +1,81 @@
+﻿@using PixelPortalen.Shared.Models
+@inject CartService CartService
+@implements IDisposable
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+@if (CartService.GetCartItems().Count == 0)
+{
+    <p>Din kundvagn är tom.</p>
+}
+else
+{
+    <div class="container">
+        @foreach (var item in CartService.GetCartItems())
+        {
+            <div class="row align-items-center py-3 border-bottom">
+          
+                <div class="col-3 col-md-2">
+                    <img src="@item.Product.ImagePath" class="img-fluid rounded shadow-sm" />
+                </div>
+
+                <div class="col-5 col-md-6">
+                    <h5 class="mb-0">@item.Product.Name</h5>
+                </div>
+    
+                <div class="col-4 col-md-4 text-end">
+                    <div class="d-flex justify-content-end align-items-center" style="gap: 0.5rem;">
+                        <button id="@("DecreseQuantButton" + item.Id)" class="btn btn-outline-secondary btn-sm"
+                                @onclick="() => DecreaseQuantity(item.Product)">
+                            -
+                        </button>
+                        <span>@item.Quantity</span>
+                        <button id="@("IncreseQuantButton" + item.Id)" class="btn btn-outline-secondary btn-sm"
+                                @onclick="() => IncreaseQuantity(item.Product)"
+                                disabled="@((item.Product.Stock != null) && item.Quantity >= item.Product.Stock)">
+                            +
+                        </button>
+                        <button id="@("RemoveFromCartButton" + item.Id)" class="btn btn-outline-danger btn-sm ms-2"
+                                @onclick="() => RemoveFromCart(item.Product)">
+                            X
+                        </button>
+                    </div>
+                    <div class="text-end mt-1">
+                        <strong>@((item.Product.Price * item.Quantity).ToString("C2", new System.Globalization.CultureInfo("sv-SE")))</strong>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <div class="row mt-4">
+            <div class="col text-end">
+                <h5>Total: <strong>@CartService.GetTotalPrice() SEK</strong></h5>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col text-end d-flex justify-content-end" style="gap: 1rem;">
+                <button id="ClearCartButton" class="btn btn-danger" @onclick="ClearCart">Rensa kundvagn</button>
+                <button id="PayButton" class="btn btn-info text-light" @onclick='() => Navigation.NavigateTo("checkout")'>Betalning</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        CartService.OnChange += StateHasChanged;
+        await CartService.LoadCart();
+    }
+
+    private async Task IncreaseQuantity(Product product)
+    {
+        await CartService.AddToCart(product);
+    }
+    private void DecreaseQuantity(Product product) => CartService.DecreaseQuantity(product);
+    private void RemoveFromCart(Product product) => CartService.RemoveFromCart(product);
+    private void ClearCart() => CartService.ClearCart();
+
+    public void Dispose() => CartService.OnChange -= StateHasChanged;
+}

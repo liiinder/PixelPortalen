@@ -1,0 +1,32 @@
+﻿.toast-container {
+    position: fixed;
+    top: 5rem;
+    right: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    z-index: 9999;
+    gap: 0.5rem;
+}
+
+.custom-toast {
+    background-color: #2d2d2d;
+    color: #00ffd5;
+    padding: 0.5rem 1rem;
+    border: 2px solid #ff80ff;
+    border-radius: 6px;
+    box-shadow: 0 0 6px #ff80ff;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.65rem;
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    white-space: nowrap;
+    max-width: auto;
+    overflow: hidden;
+}
+
+    .custom-toast.visible {
+        opacity: 1;
+        transform: translateY(0);
+    }

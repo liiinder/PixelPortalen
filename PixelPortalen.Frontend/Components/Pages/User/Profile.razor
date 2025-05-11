@@ -1,0 +1,404 @@
+﻿@page "/profile"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using System.Net.Http.Json
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+@inject HttpClient Http
+
+@if (showingProfile && !isEditing)
+{
+    <h2 class="title my-4 text-center">Mina Uppgifter</h2>
+}
+else if (showingProfile && isEditing)
+{
+    <h2 class="title my-4 text-center">Redigera Uppgifter</h2>
+}
+else if (showingPurchases)
+{
+    <h2 class="title my-4 text-center">Tidigare köp</h2>
+}
+else if (showingRatings)
+{
+    <h2 class="title my-4 text-center">Mina Betyg</h2>
+}
+
+@if (!isLoggedIn)
+{
+    <p>Du måste vara inloggad för att se din profil.</p>
+}
+else
+{
+    <div class="d-flex profile-container justify-content-between">
+        <div class="content flex-grow-1 p-3">
+            @if (showingProfile && !isEditing)
+            {
+                <div class="profile-summary text-start">
+                    <p><strong>Namn:</strong> @userProfile.FirstName @userProfile.LastName</p>
+                    <p><strong>E-post:</strong> @userProfile.Email</p>
+                    <p><strong>Telefon:</strong> @userProfile.PhoneNumber</p>
+
+                    <button class="btn btn-primary mt-3" @onclick="() => isEditing = true">Redigera Profil</button>
+                </div>
+            }
+
+            @if (showingProfile && isEditing)
+            {
+                <div class="profile-edit mx-auto" style="max-width: 500px;">
+                    <EditForm Model="@userProfile" OnValidSubmit="HandleValidSubmit">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+
+                        <div class="mb-3">
+                            <label class="form-label">Förnamn</label>
+                            <InputText class="form-control" @bind-Value="userProfile.FirstName" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Efternamn</label>
+                            <InputText class="form-control" @bind-Value="userProfile.LastName" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">E-post</label>
+                            <InputText type="email" class="form-control" @bind-Value="userProfile.Email" readonly />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Telefonnummer</label>
+                            <InputText type="tel" class="form-control" @bind-Value="userProfile.PhoneNumber" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Lösenord</label>
+                            <InputText type="password" class="form-control" @bind-Value="userProfile.Password" />
+                        </div>
+
+                        <h5 class="mt-4">Adress</h5>
+
+                        <div class="mb-3">
+                            <label class="form-label">Land</label>
+                            <InputText class="form-control" @bind-Value="userProfile.Address.Country" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Stad</label>
+                            <InputText class="form-control" @bind-Value="userProfile.Address.City" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Gatuadress</label>
+                            <InputText class="form-control" @bind-Value="userProfile.Address.Address" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Postnummer</label>
+                            <InputText class="form-control" @bind-Value="userProfile.Address.PostalCode" />
+                        </div>
+
+                        <div class="d-flex justify-content-center">
+                            <button type="submit" class="btn btn-success me-2">Spara</button>
+                            <button type="button" class="btn btn-secondary" @onclick="CancelEdit">Avbryt</button>
+                        </div>
+                    </EditForm>
+                </div>
+            }
+
+            @if (showingPurchases)
+            {
+                <div class="purchases-section text-center">
+
+                    @if (userOrders.Count == 0)
+                    {
+                        <p>Inga tidigare köp hittades.</p>
+                    }
+                    else
+                    {
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Order-ID</th>
+                                    <th>Datum</th>
+                                    <th>Skickad</th>
+                                    <th>Totalt Belopp</th>
+                                    <th>Produkter</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var order in userOrders)
+                                {
+                                    <tr>
+                                        <td>@order.Details.FirstOrDefault()?.OrderId</td>
+                                        <td>@order.OrderDate.ToString("yyyy-MM-dd")</td>
+                                        <td>@(order.ShipDate != DateTime.MinValue ? order.ShipDate.ToString("yyyy-MM-dd") : "Ej skickad")</td>
+                                        <td>@order.Details.Sum(d => d.Price * d.Quantity).ToString("C")</td>
+                                        <td>
+                                            <button class="btn-sm btn btn-info " @onclick="() => ToggleOrderDetails(order.Details.FirstOrDefault()?.OrderId)">
+                                                Visa Produkter
+                                            </button>
+                                        </td>
+                                    </tr>
+
+                                    @if (orderDetailsVisible.Contains(order.Details.FirstOrDefault()?.OrderId ?? 0))
+                                    {
+                                        <tr>
+                                            <td colspan="5">
+                                                <table class="table table-bordered">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>ProductId</th>
+                                                            <th>Namn</th>
+                                                            <th>Pris</th>
+                                                            <th>Kvantitet</th>
+                                                            <th>Totalt</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var detail in order.Details)
+                                                        {
+                                                            <tr>
+                                                                <td>@detail.ProductId</td>
+                                                                <td>@detail.ProductName</td>
+                                                                <td>@detail.Price.ToString("C")</td>
+                                                                <td>@detail.Quantity</td>
+                                                                <td>@((detail.Price * detail.Quantity).ToString("C2"))</td>
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            }
+
+            @if (showingRatings)
+            {
+                <div class="ratings-section text-center">
+
+                    @if (userRatings.Count == 0)
+                    {
+                        <p>Du har inte lämnat några betyg ännu.</p>
+                    }
+                    else
+                    {
+                        @foreach (var rating in userRatings)
+                        {
+                                
+                            @if (products.Count > 0)
+                            {
+                                var product = products.FirstOrDefault(p => p.Id == rating.ProductId);
+                                
+                                <div class="d-flex align-items-start pp-card px-3 py-2 mb-3 text-start" style="gap: 1rem;">
+                                    <div style="flex: 0 0 150px;">
+                                        <img src="@product.ImagePath" alt="Image of @product.Name" class="img-fluid rounded" Style="width: 150px;" />
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <h5 class="card-title">Produkt: @(product != null ? product.Name : "Din mamma")</h5>
+                                        <p class="card-text"><strong>Betyg:</strong> @rating.Rating / 5</p>
+
+                                        @if (!string.IsNullOrWhiteSpace(rating.Comment))
+                                        {
+                                            <p class="card-text"><strong>Kommentar:</strong> @rating.Comment</p>
+                                        }
+
+                                    </div>
+                                </div>
+                            }
+                        }
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="menu p-3 border-start" style="width: 20%;">
+            <button class="btn w-100 mb-2 @(showingProfile ? "btn-info text-light" : "btn-outline-secondary")" @onclick="ShowProfile">Mina Uppgifter</button>
+            <button class="btn w-100 mb-2 @(showingPurchases ? "btn-info text-light" : "btn-outline-secondary")" @onclick="ShowPurchases">Mina Köp</button>
+            <button class="btn w-100 @(showingRatings ? "btn-info text-light" : "btn-outline-secondary")" @onclick="ShowRatings">Mina Betyg</button>
+        </div>
+    </div>
+}
+
+@code {
+    private bool showingProfile = true;
+    private bool showingPurchases = false;
+    private bool isEditing = false;
+    private bool isLoggedIn = false;
+    private bool showingRatings = false;
+
+    private List<CustomerRating> userRatings = new();
+    private CustomerDTO userProfile = new CustomerDTO() { Address = new AddressInfoDTO() };
+    private CustomerDTO originalUserProfile = new CustomerDTO() { Address = new AddressInfoDTO() };
+    private List<OrderDTO> userOrders = new();
+    private HashSet<int> orderDetailsVisible = new HashSet<int>();
+    private List<Product> products = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        products = await Http.GetFromJsonAsync<List<Product>>("/api/Product");
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            isLoggedIn = true;
+
+            var email = user.FindFirst(ClaimTypes.Email)?.Value
+                     ?? user.FindFirst("email")?.Value;
+
+            var idClaim = user.FindFirst(c => c.Type == "id");
+            string userId = idClaim?.Value;
+
+            if (!string.IsNullOrEmpty(email) && !string.IsNullOrEmpty(userId))
+            {
+                await LoadUserProfile(email);
+                try
+                {
+                    await LoadUserOrders(userId);
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"Kunde inte hämta ordrar: {ex.Message}");
+                    userOrders = new List<OrderDTO>();
+                }
+                ;
+                try
+                {
+                    await LoadUserRatings(userId);
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"Kunde inte hämta betyg: {ex.Message}");
+                    userRatings = new List<CustomerRating>();
+                }
+
+            }
+            else
+            {
+                NavigationManager.NavigateTo("/login");
+            }
+        }
+        else
+        {
+            NavigationManager.NavigateTo("/login");
+        }
+    }
+
+    private async Task LoadUserProfile(string email)
+    {
+        var response = await Http.GetFromJsonAsync<CustomerDTO>($"api/Customers/{email}");
+        if (response != null)
+        {
+            userProfile = response;
+            originalUserProfile = CloneUserProfile(userProfile);
+        }
+    }
+
+    private async Task LoadUserOrders(string customerId)
+    {
+        var orders = await Http.GetFromJsonAsync<List<OrderDTO>>($"api/Orders/customer/{customerId}");
+        userOrders = orders ?? new List<OrderDTO>();
+    }
+
+    private CustomerDTO CloneUserProfile(CustomerDTO profile)
+    {
+        return new CustomerDTO
+            {
+                FirstName = profile.FirstName,
+                LastName = profile.LastName,
+                Email = profile.Email,
+                PhoneNumber = profile.PhoneNumber,
+                Password = profile.Password,
+                Address = new AddressInfoDTO
+                {
+                    Country = profile.Address.Country,
+                    City = profile.Address.City,
+                    Address = profile.Address.Address,
+                    PostalCode = profile.Address.PostalCode
+                }
+            };
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        var response = await Http.PutAsJsonAsync($"api/Customers/{userProfile.Email}", userProfile);
+        if (response.IsSuccessStatusCode)
+        {
+            originalUserProfile = CloneUserProfile(userProfile);
+            isEditing = false;
+        }
+    }
+
+    private void CancelEdit()
+    {
+        userProfile = CloneUserProfile(originalUserProfile);
+        isEditing = false;
+    }
+
+    private void ShowProfile()
+    {
+        showingRatings = false;
+        showingProfile = true;
+        showingPurchases = false;
+    }
+
+    private void ShowPurchases()
+    {
+        showingRatings = false;
+        showingProfile = false;
+        showingPurchases = true;
+    }
+
+    private void ShowRatings()
+    {
+        showingProfile = false;
+        showingPurchases = false;
+        showingRatings = true;
+    }
+
+    private void ToggleOrderDetails(int? orderId)
+    {
+        if (orderId.HasValue)
+        {
+            if (orderDetailsVisible.Contains(orderId.Value))
+            {
+                orderDetailsVisible.Remove(orderId.Value);
+            }
+            else
+            {
+                orderDetailsVisible.Add(orderId.Value);
+            }
+        }
+    }
+
+    private async Task LoadUserRatings(string customerId)
+    {
+        try
+        {
+            var ratings = await Http.GetFromJsonAsync<List<CustomerRating>>($"api/customerratings/customer/{customerId}");
+            if (ratings != null)
+            {
+                userRatings = ratings;
+                Console.WriteLine($"Hämtade {userRatings.Count} betyg.");
+            }
+            else
+            {
+                userRatings = new List<CustomerRating>();
+                Console.WriteLine("Inga betyg hittades.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Fel vid hämtning av betyg: {ex.Message}");
+            userRatings = new List<CustomerRating>();
+        }
+    }
+
+
+}

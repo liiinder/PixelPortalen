@@ -1,0 +1,152 @@
+﻿@using PixelPortalen.Shared.Models
+@using Microsoft.AspNetCore.Components
+
+@if (Visible && User != null)
+{
+    <div class="modal fade show" style="display:block;" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        Orderhistorik för @User.FirstName @User.LastName
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="OnClose"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="accordion" id="orderAccordion">
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingCart">
+                                <button class="accordion-button"
+                                        type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#collapseCart"
+                                        aria-expanded="true"
+                                        aria-controls="collapseCart">
+                                    🛒 Pågående varukorg
+                                </button>
+                            </h2>
+                            <div id="collapseCart"
+                                 class="accordion-collapse collapse show"
+                                 aria-labelledby="headingCart"
+                                 data-bs-parent="#orderAccordion">
+                                <div class="accordion-body">
+                                    @if (CartItems == null)
+                                    {
+                                        <p><em>Laddar varukorg…</em></p>
+                                    }
+                                    else if (!CartItems.Any())
+                                    {
+                                        <p><em>Varukorgen är tom.</em></p>
+                                    }
+                                    else
+                                    {
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Produkt</th>
+                                                    <th>Pris</th>
+                                                    <th>Antal</th>
+                                                    <th>Total</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var item in CartItems)
+                                                {
+                                                    <tr>
+                                                        <td>@(item.Product?.Name ?? $"Produkt #{item.ProductId}")</td>
+                                                        <td>@item.Price.ToString("C2", new System.Globalization.CultureInfo("sv-SE"))</td>
+                                                        <td>@item.Quantity</td>
+                                                        <td>@((item.Price * item.Quantity).ToString("C2", new System.Globalization.CultureInfo("sv-SE")))</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                            <tfoot>
+                                                <tr>
+                                                    <td colspan="3" class="text-end fw-bold">Summa:</td>
+                                                    <td class="fw-bold">
+                                                        @CartItems.Sum(i => i.Price * i.Quantity).ToString("C2", new System.Globalization.CultureInfo("sv-SE"))
+                                                    </td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        @if (Orders == null)
+                        {
+                            <p><em>Laddar ordrar…</em></p>
+                        }
+                        else if (!Orders.Any())
+                        {
+                            <p><em>Inga ordrar hittades.</em></p>
+                        }
+                        else
+                        {
+                            @foreach (var o in Orders)
+                            {
+                                var hid = $"heading{o.Id}";
+                                var cid = $"collapse{o.Id}";
+                                var orderSum = o.Details.Sum(detail => detail.Price * detail.Quantity);
+
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="@hid">
+                                        <button class="accordion-button collapsed"
+                                                type="button"
+                                                data-bs-toggle="collapse"
+                                                data-bs-target="#@cid"
+                                                aria-expanded="false"
+                                                aria-controls="@cid">
+                                            Order #@o.Id — @o.OrderDate.ToShortDateString() —
+                                            Summa: @orderSum.ToString("C2", new System.Globalization.CultureInfo("sv-SE"))
+                                        </button>
+                                    </h2>
+                                    <div id="@cid"
+                                         class="accordion-collapse collapse"
+                                         aria-labelledby="@hid"
+                                         data-bs-parent="#orderAccordion">
+                                        <div class="accordion-body">
+                                            <table class="table table-sm mb-0">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Produkt-Name</th>
+                                                        <th>Pris</th>
+                                                        <th>Antal</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var d in o.Details)
+                                                    {
+                                                        <tr>
+                                                            <td>@d.ProductName</td>
+                                                            <td>@d.Price.ToString("C2", new System.Globalization.CultureInfo("sv-SE"))</td>
+                                                            <td>@d.Quantity</td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="CloseBTN" class="btn btn-secondary" @onclick="OnClose">Stäng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    [Parameter] public Customer User { get; set; }
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public List<Order> Orders { get; set; }
+    [Parameter] public List<CartItem> CartItems { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+}

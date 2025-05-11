@@ -1,0 +1,200 @@
+﻿@page "/products"
+@* @inject HttpClient Http *@
+@inject ApiService http
+@inject ToastService ToastService
+@using PixelPortalen.Frontend.Services
+@using PixelPortalen.Shared.Models
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<head>
+    <link href="css/ProductPageStyle.css" rel="stylesheet" />
+</head>
+
+<h2 class="title mt-4 text-center">Produkter</h2>
+
+<div class="d-flex justify-content-between flex-wrap">
+    <AuthorizeView Roles="Admin">
+        <Authorized>
+            <div class="mb-3">
+                <button id="AddProductButton" class="btn btn-info text-light" @onclick="AddProduct">
+                    Lägg till Produkt
+                </button>
+            </div>
+        </Authorized>
+    </AuthorizeView>
+
+    <div class="dropdown-center mb-3 align-items-center">
+        <button id="sortByButton" class="btn btn-info text-light dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            Sorterat på: @SortingText
+        </button>
+        <ul class="sortBy dropdown-menu px-3 pp-card">
+            <li id="sortByRelevance" class="dropdown-item" @onclick="@(() => SortBy("relevance"))">Relevans</li>
+            <li id="sortByPriceAsc" class="dropdown-item" @onclick="@(() => SortBy("price_asc"))">Billigast överst</li>
+            <li id="sortByPriceDesc" class="dropdown-item" @onclick="@(() => SortBy("price_desc"))">Dyrast överst</li>
+            <li id="sortByNameAsc" class="dropdown-item" @onclick="@(() => SortBy("name_asc"))">Produktnamn A-Ö</li>
+            <li id="sortByNameDesc" class="dropdown-item" @onclick="@(() => SortBy("name_desc"))">Produktnamn Ö-A</li>
+        </ul>
+    </div>
+
+    <div class="dropdown-center mb-3">
+        <button id="filterByGenres" class="btn btn-info text-light dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            Filtrera på Genres
+        </button>
+        <ul class="filterBy dropdown-menu px-3 pp-card">
+            @foreach (var genre in genres)
+            {
+                <li>
+                    <input class="form-check-input" type="checkbox" id="@("genreId" + genre.Id)" value=""
+                            @onchange="() => ToggleGenre(genre.Id)" />
+                    <label class="form-check-label" for="@("genreId" + genre.Id)">@genre.Name</label>
+                </li>
+            }
+        </ul>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <p class="error">@errorMessage</p>
+}
+else if (products == null)
+{
+    <p>Laddar produkter...</p>
+}
+else
+{
+    <div class="products-grid">
+        @for (int i = 0; i < pageSize; i++)
+        {
+            if (i + ((currentPage - 1) * 10) == products.Count) break;
+            <ProductCard Product="products[i + ((currentPage - 1) * 10)]" />
+        }
+    </div>
+
+    <nav aria-label="Page navigation example">
+        <ul class="pagination pp-font">
+            <li class="page-item @(IsFirstPage ? "disabled" : "")">
+                <button id="previousPage" class="page-link pp-bb" @onclick="PreviousPage">Previous</button>
+            </li>
+
+            @for (int i = 1; i <= TotalPages; i++)
+            {
+                var pageNumber = i;
+                <li class="page-item @(currentPage == i ? "active" : "")">
+                    <button type="button" id="@("goToPage" + i)" class="page-link pp-bb" @onclick="() => GoToPage(pageNumber)">@i</button>
+                </li>
+            }
+
+            <li class="page-item @(IsLastPage ? "disabled" : "")">
+                <button type="button" id="nextPage" class="page-link pp-bb" @onclick="NextPage">Next</button>
+            </li>
+        </ul>
+    </nav>
+}
+
+@code {
+    private List<Genre> genres = new();
+    private List<int> filteredGenres = new();
+
+    private List<Product> products;
+    private List<Product> allProducts;
+
+    private string SortingText = "Relevans";
+
+    private string errorMessage;
+
+    private int currentPage = 1;
+    private int pageSize = 10;
+
+    private int TotalPages => (int)Math.Ceiling((double)products.Count / pageSize);
+    private bool IsFirstPage => currentPage == 1;
+    private bool IsLastPage => currentPage == TotalPages;
+
+    protected override async Task OnInitializedAsync()
+    {
+        allProducts = await http.GetAsync<List<Product>>("api/product");
+        products = allProducts;
+
+        genres = await http.GetAsync<List<Genre>>("api/genre");
+    }
+
+    private async Task NextPage()
+    {
+        if (!IsLastPage) GoToPage(currentPage + 1);
+    }
+
+    private async Task PreviousPage()
+    {
+        if (!IsFirstPage) GoToPage(currentPage - 1);
+    }
+
+    private async Task GoToPage(int newPage)
+    {
+        if (newPage >= 1 && newPage <= TotalPages)
+        {
+            currentPage = newPage;
+            await JS.InvokeVoidAsync("scrollToTop");
+            StateHasChanged();
+        }
+    }
+
+    private void ToggleGenre(int id)
+    {
+        if (filteredGenres.Contains(id)) filteredGenres.Remove(id);
+        else filteredGenres.Add(id);
+
+        ShowProducts();
+    }
+
+    private void ShowProducts()
+    {
+        if (filteredGenres.Count > 0)
+        {
+            var filteredProducts = new List<Product>();
+
+            foreach (var product in allProducts)
+            {
+                var productGenreIds = product.Genres.Select(g => g.Id).ToList();
+
+                if (filteredGenres.All(id => productGenreIds.Contains(id)))
+                {
+                    filteredProducts.Add(product);
+                }
+            }
+            products = filteredProducts;
+        }
+        else products = allProducts;
+    }
+
+    private void SortBy(string sort)
+    {
+        switch (sort)
+        {
+            case "price_asc":
+                allProducts = allProducts.OrderBy(p => p.Price).ToList();
+                SortingText = "Billigast överst";
+                break;
+            case "price_desc":
+                allProducts = allProducts.OrderByDescending(p => p.Price).ToList();
+                SortingText = "Dyrast överst";
+                break;
+            case "name_asc":
+                allProducts = allProducts.OrderBy(p => p.Name).ToList();
+                SortingText = "Produktnamn A-Ö";
+                break;
+            case "name_desc":
+                allProducts = allProducts.OrderByDescending(p => p.Name).ToList();
+                SortingText = "Produktnamn Ö-A";
+                break;
+            case "relevance":
+            default:
+                SortingText = "Relevans";
+                allProducts = allProducts.OrderBy(p => p.Id).ToList();
+                break;
+        }
+        ShowProducts();
+    }
+
+    private void AddProduct() => Navigation.NavigateTo("/editproduct");
+}

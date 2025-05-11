@@ -1,0 +1,12 @@
+C:\Users\linder\source\repos\PixelPortalen - Gamlestaden\PixelPortalen\PixelPortalen.Shared\bin\Release\net8.0\PixelPortalen.Shared.deps.json
+C:\Users\linder\source\repos\PixelPortalen - Gamlestaden\PixelPortalen\PixelPortalen.Shared\bin\Release\net8.0\PixelPortalen.Shared.dll
+C:\Users\linder\source\repos\PixelPortalen - Gamlestaden\PixelPortalen\PixelPortalen.Shared\bin\Release\net8.0\PixelPortalen.Shared.pdb
+C:\Users\linder\source\repos\PixelPortalen - Gamlestaden\PixelPortalen\PixelPortalen.Shared\obj\Release\net8.0\PixelPortalen.Shared.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\linder\source\repos\PixelPortalen - Gamlestaden\PixelPortalen\PixelPortalen.Shared\obj\Release\net8.0\PixelPortalen.Shared.AssemblyInfoInputs.cache
+C:\Users\linder\source\repos\PixelPortalen - Gamlestaden\PixelPortalen\PixelPortalen.Shared\obj\Release\net8.0\PixelPortalen.Shared.AssemblyInfo.cs
+C:\Users\linder\source\repos\PixelPortalen - Gamlestaden\PixelPortalen\PixelPortalen.Shared\obj\Release\net8.0\PixelPortalen.Shared.csproj.CoreCompileInputs.cache
+C:\Users\linder\source\repos\PixelPortalen - Gamlestaden\PixelPortalen\PixelPortalen.Shared\obj\Release\net8.0\PixelPortalen.Shared.sourcelink.json
+C:\Users\linder\source\repos\PixelPortalen - Gamlestaden\PixelPortalen\PixelPortalen.Shared\obj\Release\net8.0\PixelPortalen.Shared.dll
+C:\Users\linder\source\repos\PixelPortalen - Gamlestaden\PixelPortalen\PixelPortalen.Shared\obj\Release\net8.0\refint\PixelPortalen.Shared.dll
+C:\Users\linder\source\repos\PixelPortalen - Gamlestaden\PixelPortalen\PixelPortalen.Shared\obj\Release\net8.0\PixelPortalen.Shared.pdb
+C:\Users\linder\source\repos\PixelPortalen - Gamlestaden\PixelPortalen\PixelPortalen.Shared\obj\Release\net8.0\ref\PixelPortalen.Shared.dll

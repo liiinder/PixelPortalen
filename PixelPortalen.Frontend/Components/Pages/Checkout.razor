@@ -1,0 +1,156 @@
+﻿@page "/checkout"
+@using PixelPortalen.Frontend.Services
+@using PixelPortalen.Shared.Models
+@using PixelPortalen.Frontend.Auth
+@inject CustomAuthStateProvider CustomAuthStateProvider
+@implements IDisposable
+@inject CartService CartService
+@inject ToastService ToastService
+@inject NavigationManager Navigation
+@inject HttpClient Http
+
+<h2 class="title mt-4 text-center">Kassa</h2>
+
+@if (CartService.GetCartItems().Count == 0)
+{
+    <p>Din kundvagn är tom.</p>
+}
+else
+{
+    <div class="container mb-5">
+        @foreach (var item in CartService.GetCartItems())
+        {
+
+            @if (item?.Product != null)
+            {
+                <div class="row align-items-center py-3 border-bottom">
+
+                    <div class="col-3 col-md-2">
+                        <img src="@item.Product.ImagePath" class="img-fluid rounded shadow-sm" />
+                    </div>
+
+                    <div class="col-5 col-md-6">
+                        <h5 class="mb-0">@item.Product.Name</h5>
+                    </div>
+
+                    <div class="col-4 col-md-4 text-end">
+                        <div class="d-flex justify-content-end align-items-center" style="gap: 0.5rem;">
+                            <button id="DecreseQuantButton" class="btn btn-outline-secondary btn-sm"
+                            @onclick="() => DecreaseQuantity(item.Product)">
+                                -
+                            </button>
+                            <span>@item.Quantity</span>
+                            <button id="IncreseQuantButton" class="btn btn-outline-secondary btn-sm"
+                            @onclick="() => IncreaseQuantity(item.Product)"
+                            disabled="@((item.Product.Stock != null) && item.Quantity >= item.Product.Stock)">
+                                +
+                            </button>
+                            <button id="RemoveFromCartButton" class="btn btn-outline-danger btn-sm ms-2"
+                            @onclick="() => RemoveFromCart(item.Product)">
+                                X
+                            </button>
+                        </div>
+                        <div class="text-end mt-1">
+                            <strong>@(item.Product.Price * item.Quantity) SEK</strong>
+                        </div>
+                    </div>
+                </div>
+            }
+        }    
+
+        <div class="row mt-4">
+            <div class="col text-end">
+                <h5>Total: <strong>@CartService.GetTotalPrice() SEK</strong></h5>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col text-end d-flex justify-content-between" style="gap: 1rem;">
+                <AuthorizeView>
+                    <Authorized>
+                        <button id="placeOrderGetInStore" type="submit" class="btn btn-primary mt-3 w-25" @onclick="PlaceOrder">Betala och hämta i butik</button>
+                    </Authorized>
+                    <NotAuthorized>
+                        <button id="Login" class="btn btn-success" @onclick='() => Navigation.NavigateTo("/login")'>Logga in</button>
+                    </NotAuthorized>
+                </AuthorizeView>
+                <button id="ClearCartButton" class="btn btn-danger" @onclick="ClearCart">Rensa kundvagn</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    protected override void OnInitialized()
+    {
+        CartService.OnChange += StateHasChanged;
+    }
+
+
+    private async Task<int?> GetLoggedInUserIdAsync()  
+    {  
+        var authState = await CustomAuthStateProvider.GetAuthenticationStateAsync();  
+        var user = authState.User;  
+
+        if (user.Identity != null && user.Identity.IsAuthenticated)  
+        {  
+            var userIdClaim = user.FindFirst("id");  
+            if (userIdClaim != null)  
+            {  
+                return int.Parse(userIdClaim.Value);  
+            }  
+        }  
+
+        return null;  
+    }  
+
+    private async Task PlaceOrder()  
+    {  
+        var loggedInUserId = await GetLoggedInUserIdAsync();  
+        if (loggedInUserId == null)  
+        {  
+            msg = "Du måste vara inloggad för att göra en beställning.";  
+            return;
+        }  
+
+        var cartItems = CartService.GetCartItems();  
+
+        var order = new OrderDTO  
+        {  
+            CustomerId = loggedInUserId.Value,  
+            OrderDate = DateTime.Now,
+            ShipDate = DateTime.MinValue,
+            Details = cartItems.Select(item => new OrderDetailDTO  
+            {  
+                ProductId = item.ProductId,  
+                Price = item.Product.Price,
+                Quantity = item.Quantity,
+                ProductName = item.Product.Name,
+            }).ToList()  
+        };
+
+        var response = await Http.PostAsJsonAsync("api/orders", order);  
+
+        if (response.IsSuccessStatusCode)  
+        {  
+            CartService.ClearCart();  
+            msg = $"Order bekräftat och kommer nu att packas! \n Tack för ditt köp!";
+            ToastService.ShowToast(msg);
+            Navigation.NavigateTo($"/");
+        }  
+        else  
+        {  
+            var errorMsg = await response.Content.ReadAsStringAsync();  
+            msg = "Något gick fel, prova igen senare";  
+        }  
+    }  
+        
+    private string msg = string.Empty;
+    private Customer customer = new();
+
+    private void IncreaseQuantity(Product product) => CartService.AddToCart(product);
+    private void DecreaseQuantity(Product product) => CartService.DecreaseQuantity(product);
+    private void RemoveFromCart(Product product) => CartService.RemoveFromCart(product);
+    private void ClearCart() => CartService.ClearCart();
+
+    public void Dispose() => CartService.OnChange -= StateHasChanged;
+}

@@ -1,0 +1,207 @@
+﻿@page "/adminpage"
+@using PixelPortalen.Shared.Models
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Authorization
+@inject ApiService Http
+@inject AuthenticationStateProvider AuthStateProvider
+
+<h2 class="title fs-2 mt-4 text-center">Ordrar</h2>
+
+@if (allOrders == null)
+{
+    <p><em>Laddar Ordrar…</em></p>
+}
+else
+{
+    <AllOrders orders="@allOrders" />
+}
+
+<h2 class="title fs-2 mt-4 text-center">Användare</h2>
+
+<div class="accordion" id="accordionUsers">
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button text-center" type="button"
+            data-bs-toggle="collapse" data-bs-target="#collapseUsers"
+            aria-expanded="true" aria-controls="collapseOrder">
+                @(customers is null ? "Laddar Användare..." : "Visa användare")
+            </button>
+        </h2>
+        <div id="collapseUsers" class="accordion-collapse collapse show" data-bs-parent="#accordionUsers">
+            <div class="accordion-body">
+                @if (customers is not null)
+                {
+                    <table class="table table-dark table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Id</th>
+                                <th>Förnamn</th>
+                                <th>Efternamn</th>
+                                <th>E-post</th>
+                                <th>Telefon</th>
+                                <th>Land</th>
+                                <th>Stad</th>
+                                <th>Adress</th>
+                                <th>Åtgärder</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var u in customers)
+                            {
+                                if (u == null)
+                                {
+                                    <tr><td colspan="9" class="text-danger">Ogiltig användare</td></tr>
+                                    continue;
+                                }
+
+                                <tr class="table-active">
+                                    <td>@u.Id</td>
+                                    <td>@u.FirstName</td>
+                                    <td>@u.LastName</td>
+                                    <td>@u.Email</td>
+                                    <td>@u.PhoneNumber</td>
+                                    <td>@(u.Address?.Country ?? "-")</td>
+                                    <td>@(u.Address?.City ?? "-")</td>
+                                    <td>@(u.Address?.Address ?? "-")</td>
+                                    <td>
+                                        <button id="Edit @u.Email" class="btn btn-sm btn-primary me-1" @onclick="() => OpenEdit(u)">Redigera</button>
+                                        <button id="History @u.Email" class="btn btn-sm btn-info me-2" @onclick="() => OpenHistory(u)">Historik</button>
+
+                                        <div class="form-check form-switch d-inline-block">
+                                            <input class="form-check-input"
+                                            type="checkbox"
+                                            role="switch"
+                                            id="switch_@u.Id"
+                                            checked="@IsAdmin(u)"
+                                            @onchange="() => SetAdminOrUser(u)"
+                                            disabled="@(u.Email == currentUserEmail)" />
+                                            <label class="form-check-label" for="switch_@u.Id">
+                                                @if (IsAdmin(u))
+                                                {
+                                                    <span class="badge bg-warning text-dark">Admin</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary">User</span>
+                                                }
+                                            </label>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<EditUserModal User="editableUser"
+               Visible="showEdit"
+               OnSave="HandleSave"
+               OnCancel="CancelEdit" />
+
+<OrderHistoryModal User="selectedUser"
+                   Visible="showHistory"
+                   Orders="userOrders"
+                   CartItems="cartItems"
+                   OnClose="CloseHistory" />
+
+@code {
+
+    private List<Customer> customers;
+    private Customer selectedUser;
+    private Customer editableUser;
+    private List<Order> allOrders;
+    private List<Order> userOrders;
+    private List<CartItem> cartItems;
+    private bool showEdit;
+    private bool showHistory;
+    private string currentUserEmail;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity != null && user.Identity.IsAuthenticated)
+        {
+            currentUserEmail = user.FindFirst(c => c.Type == System.Security.Claims.ClaimTypes.Email)?.Value;
+        }
+
+        customers = await Http.GetAsync<List<Customer>>("api/customers") ?? new List<Customer>();
+        allOrders = await Http.GetAsync<List<Order>>("api/orders") ?? new List<Order>();
+
+        allOrders.Sort((x, y) => y.OrderDate.CompareTo(x.OrderDate));
+    }
+
+    void OpenEdit(Customer u)
+    {
+        selectedUser = u;
+
+        editableUser = new Customer
+            {
+                Id = u.Id,
+                FirstName = u.FirstName,
+                LastName = u.LastName,
+                Email = u.Email,
+                PhoneNumber = u.PhoneNumber,
+                Address = u.Address != null
+                    ? new AddressInfo
+                    {
+                        Id = u.Address.Id,
+                        Country = u.Address.Country,
+                        City = u.Address.City,
+                        Address = u.Address.Address,
+                        PostalCode = u.Address.PostalCode
+                    }
+                    : new AddressInfo(),
+                Password = u.Password,
+                Roll = u.Roll
+            };
+
+        showEdit = true;
+    }
+
+    async Task HandleSave(Customer updated)
+    {
+        await Http.PutAsync<string, Customer>($"api/customers/{updated.Email}", updated);
+        var idx = customers.FindIndex(c => c.Id == updated.Id);
+        if (idx >= 0) customers[idx] = updated;
+        showEdit = false;
+    }
+
+    void CancelEdit() => showEdit = false;
+
+    void OpenHistory(Customer u)
+    {
+        selectedUser = u;
+        userOrders = null;
+        cartItems = null;
+        showHistory = true;
+        _ = LoadHistoryAsync();
+    }
+
+    async Task LoadHistoryAsync()
+    {
+        var userId = selectedUser.Id.ToString();
+        userOrders = await Http.GetAsync<List<Order>>($"api/orders/customer/{userId}");
+        cartItems = await Http.GetAsync<List<CartItem>>($"api/cart/{userId}");
+        StateHasChanged();
+    }
+
+    async Task SetAdminOrUser(Customer u)
+    {
+        var result = await Http.PutAsync1($"api/customers/toggle-role/{u.Email}");
+        if (!string.IsNullOrWhiteSpace(result) && result.ToLower().Contains("success"))
+        {
+            u.Roll = u.Roll == "Admin" ? "User" : "Admin";
+            StateHasChanged();
+        }
+    }
+
+    bool IsAdmin(Customer u) => u.Roll == "Admin";
+
+    void CloseHistory() => showHistory = false;
+}

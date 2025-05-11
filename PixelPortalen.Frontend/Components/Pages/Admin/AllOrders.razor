@@ -1,0 +1,126 @@
+﻿@using PixelPortalen.Shared.Models
+@using Microsoft.AspNetCore.Components
+@inject HttpClient Http
+
+<div class="accordion" id="accordionOrders">
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button"
+            data-bs-toggle="collapse" data-bs-target="#collapseOrder" 
+            aria-expanded="true" aria-controls="collapseOrder">
+                @(orders is null ? "Laddar ordrar..." : "Visa ordrar")
+            </button>
+        </h2>
+        <div id="collapseOrder" class="accordion-collapse collapse hide" data-bs-parent="#accordionOrders">
+            <div class="accordion-body">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Order-ID</th>
+                            <th>Kund-ID</th>
+                            <th>Datum</th>
+                            <th>Skickad</th>
+                            <th>Totalt Belopp</th>
+                            <th>Produkter</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var order in orders)
+                        {
+                            <tr>
+                                <td>@order.Details.FirstOrDefault()?.OrderId</td>
+                                <td>@order.CustomerId</td>
+                                <td>@order.OrderDate.ToString("yyyy-MM-dd HH:mm")</td>
+                                @if(order.ShipDate != DateTime.MinValue) 
+                                {
+                                    <td>@order.ShipDate.ToString("yyyy-MM-dd HH:mm")</td>
+                                }
+                                else
+                                {
+                                    <td>
+                                        <button id="@("sendOrder" + order.Id)" class="btn btn-sm btn-success text-light" @onclick="@(() => sendOrder(order.Id))">
+                                            Skicka vara
+                                        </button>
+                                    </td>
+                                }
+                                <td>@order.Details.Sum(d => d.Price * d.Quantity).ToString("C", new System.Globalization.CultureInfo("sv-SE"))</td>
+                                <td>
+                                    <button class="btn btn-sm btn-info" @onclick="() => ToggleOrderDetails(order.Details.FirstOrDefault()?.OrderId)">
+                                        Visa Produkter
+                                    </button>
+                                </td>
+                            </tr>
+
+                            @if (orderDetailsVisible.Contains(order.Details.FirstOrDefault()?.OrderId ?? 0))
+                            {
+                                <tr>
+                                    <td colspan="5">
+                                        <table class="table table-bordered">
+                                            <thead>
+                                                <tr>
+                                                    <th>ProductId</th>
+                                                    <th>Namn</th>
+                                                    <th>Pris</th>
+                                                    <th>Kvantitet</th>
+                                                    <th>Totalt</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var detail in order.Details)
+                                                {
+                                                    <tr>
+                                                        <td>@detail.ProductId</td>
+                                                        <td>@detail.ProductName</td>
+                                                        <td>@detail.Price.ToString("C", new System.Globalization.CultureInfo("sv-SE"))</td>
+                                                        <td>@detail.Quantity</td>
+                                                        <td>@((detail.Price * detail.Quantity).ToString("C2", new System.Globalization.CultureInfo("sv-SE")))</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public List<Order> orders { get; set; }
+
+    private HashSet<int> orderDetailsVisible = new HashSet<int>();
+
+    private void ToggleOrderDetails(int? orderId)
+    {
+        if (orderId.HasValue)
+        {
+            if (orderDetailsVisible.Contains(orderId.Value))
+            {
+                orderDetailsVisible.Remove(orderId.Value);
+            }
+            else
+            {
+                orderDetailsVisible.Add(orderId.Value);
+            }
+        }
+    }
+
+    private async Task sendOrder(int orderId)
+    {
+        var updateDTO = new UpdateShipDateDTO();
+        updateDTO.ShipDate = DateTime.Now;
+
+        var response = await Http.PatchAsJsonAsync($"api/orders/{orderId}/shipdate", updateDTO);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var order = orders.FirstOrDefault(o => o.Id == orderId);
+            order.ShipDate = updateDTO.ShipDate;
+            StateHasChanged();
+        }
+    }
+}

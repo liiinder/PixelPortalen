@@ -1,0 +1,28 @@
+﻿@inherits LayoutComponentBase
+@using PixelPortalen.Frontend.Services
+@inject ToastService ToastService
+@inject CartService CartService
+
+<Toast />
+
+<div class="page text-light min-vh-100 d-flex flex-column" data-bs-theme="dark">
+    <NavMenu />
+  
+    <main class="flex-fill pb-5">
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
+
+<div class="offcanvas offcanvas-end bg-dark text-light" tabindex="-1" id="cartOffcanvas" aria-labelledby="cartOffcanvasLabel">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title pp-font text-info" id="cartOffcanvasLabel">Kundvagn</h5>
+        <button id="OffcanvasButton" type="button" class="btn-close btn-close-white text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <CartContent />
+    </div>
+</div>
+
+<Footer />

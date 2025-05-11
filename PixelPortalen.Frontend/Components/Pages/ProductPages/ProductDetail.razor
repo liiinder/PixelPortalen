@@ -1,0 +1,197 @@
+﻿@page "/products/{productId:int}"
+
+@inject ApiService ApiService
+@inject CustomAuthStateProvider CustomAuthStateProvider
+@using PixelPortalen.Shared.Models
+@using PixelPortalen.Shared.DTO
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+
+<div class="container py-5">
+    @if (product is null)
+    {
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2">Laddar produkt...</p>
+        </div>
+    }
+    else
+    {
+        <div class="row pp-card p-2">
+            <div class="col-md-5 text-center mb-4">
+                <img src="@product.ImagePath" alt="@product.Name"
+                     class="w-100 rounded shadow"
+                     style="max-height: 600px; object-fit: contain;" />
+            </div>
+
+            <div class="col-md-7">
+                <h2 class="title mb-3">@product.Name</h2>
+                <p><strong>Pris:</strong> <span class="text-info fs-5">@product.Price.ToString("C", new System.Globalization.CultureInfo("sv-SE"))</span></p>
+
+                @if (product.Stock is null)
+                {
+                    <p><strong>Digital kopia</strong></p>
+                }
+                else
+                {
+                    <p><strong>Lager:</strong> @product.Stock st</p>
+                }
+
+                <p><strong>Kategori:</strong> @product.Category?.Name</p>
+                <p class="text-muted" style="overflow-wrap: break-word;">@product.LongDescription</p>
+
+                <div class="mt-3">
+                    <h5>Betyg: ⭐ @averageRating.ToString("0.0") / 5</h5>
+                    <p>(@ratings.Count recension@(ratings.Count > 1 ? "er" : ""))</p>
+                </div>
+            </div>
+        </div>
+
+        @if (ratings?.Any(r => !string.IsNullOrWhiteSpace(r.Comment)) == true)
+        {
+            <h4 class="pp-font text-info mt-5">Kommentarer</h4>
+    
+            foreach (var r in ratings)
+            {
+                @if (!string.IsNullOrWhiteSpace(r.Comment))
+                {
+                    <div class="pp-card mb-3 px-3 py-2"> @* py-2 (top/bottom) so it doesnt take up as much space) *@
+                        <h6 class="card-subtitle text-muted">@r.Customer.FirstName @r.Customer.LastName gav betyget <strong>@r.Rating / 5</strong></h6>
+                        <p class="card-text">@r.Comment</p>
+                    </div>
+                }
+            }
+        }
+        @*else
+        {
+            <div class="alert pp-card mt-5 mb-4">
+                Inga kommentarer ännu.
+            </div>
+        }*@
+
+        <h4 class="pp-font mt-5 text-info">Lämna en kommentar</h4>
+
+        @if (loggedInUserId is null)
+        {
+            <div class="alert pp-card">
+                Du måste vara inloggad för att lämna ett betyg.
+            </div>
+        }
+        else
+        {
+            <div class="pp-card p-3">
+                <div class="">
+
+                    <EditForm Model="newRating" OnValidSubmit="SubmitRating">
+                        <div class="mb-3">
+                            <label class="form-label">Kommentar</label>
+                            <InputTextArea @bind-Value="newRating.Comment" class="form-control" rows="3" placeholder="Skriv din kommentar här" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label d-block">Betyg</label>
+                            <InputRadioGroup @bind-Value="newRating.Rating">
+                                <div class="d-flex flex-wrap gap-3">
+                                    @for (int i = 1; i <= 5; i++)
+                                    {
+                                        <div class="form-check">
+                                            <InputRadio TValue="int" class="form-check-input" id=@("star" + i) Value="@i" />
+                                            <label class="form-check-label" for=@("star" + i)>@(new string('★', i))</label>
+                                        </div>
+                                    }
+                                </div>
+                            </InputRadioGroup>
+                        </div>
+
+                        <button type="submit" class="btn btn-info text-light">
+                            <i class="bi bi-send-fill me-1"></i> Skicka
+                        </button>
+                    </EditForm>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int productId { get; set; }
+
+    private Product? product;
+    private List<CustomerRating> ratings = new();
+    private CustomerRatingDTO newRating = new();
+    private double averageRating = 0;
+    private int? loggedInUserId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Console.WriteLine($"Begär produkt-ID: {productId}");
+
+            product = await ApiService.GetAsync<Product>($"api/product/{productId}");
+
+            if (product == null)
+            {
+                Console.WriteLine($"Produkten {productId} hittades inte i API:et.");
+                return;
+            }
+
+            ratings = await ApiService.GetAsync<List<CustomerRating>>($"api/customerratings/product/{productId}") ?? new();
+
+            if (ratings.Any())
+            {
+                averageRating = ratings.Average(r => r.Rating);
+            }
+
+            loggedInUserId = await GetLoggedInUserIdAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[FEL] Undantag i OnInitializedAsync: {ex.Message}");
+        }
+    }
+
+    private async Task SubmitRating()
+    {
+        if (loggedInUserId is null)
+        {
+            Console.WriteLine("Användaren är inte inloggad.");
+            return;
+        }
+
+        newRating.CustomerId = loggedInUserId.Value;
+        newRating.ProductId = productId;
+
+        var result = await ApiService.PostAsync<object, CustomerRatingDTO>(
+            $"api/customerratings/{newRating.CustomerId}", newRating);
+
+        if (result != null)
+        {
+            ratings = await ApiService.GetAsync<List<CustomerRating>>($"api/customerratings/product/{productId}") ?? new();
+            averageRating = ratings.Any() ? ratings.Average(r => r.Rating) : 0;
+            newRating = new CustomerRatingDTO();
+        }
+        else
+        {
+            Console.WriteLine("Kunde inte skicka betyg.");
+        }
+    }
+
+    private async Task<int?> GetLoggedInUserIdAsync()
+    {
+        var authState = await CustomAuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity is { IsAuthenticated: true })
+        {
+            var userIdClaim = user.FindFirst("id");
+            if (userIdClaim != null && int.TryParse(userIdClaim.Value, out var id))
+            {
+                return id;
+            }
+        }
+
+        return null;
+    }
+}

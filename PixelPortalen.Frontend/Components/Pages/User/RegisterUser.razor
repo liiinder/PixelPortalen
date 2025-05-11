@@ -1,0 +1,106 @@
+﻿@page "/register"
+@inject NavigationManager NavigationManager
+@inject HttpClient Http
+
+<h2 class="title text-center my-4">Registrering</h2>
+
+@if (!string.IsNullOrWhiteSpace(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+<EditForm Model="@customer" OnValidSubmit="@HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="pp-card p-3">
+        <div class="row">
+            <div class="mb-3 col-md-6">
+                <label class="form-label">Förnamn</label>
+                <InputText id="firstName" class="form-control" @bind-Value="customer.FirstName" />
+                <ValidationMessage For="@(() => customer.FirstName)" />
+            </div>
+            <div class="mb-3 col-md-6">
+                <label class="form-label">Efternamn</label>
+                <InputText id="lastName" class="form-control" @bind-Value="customer.LastName" />
+                <ValidationMessage For="@(() => customer.LastName)" />
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Email</label>
+            <InputText id="email" type="email" class="form-control" @bind-Value="customer.Email" />
+            <ValidationMessage For="@(() => customer.Email)" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Telefonnummer</label>
+            <InputText id="tel" type="tel" class="form-control" @bind-Value="customer.PhoneNumber" />
+            <ValidationMessage For="@(() => customer.PhoneNumber)" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Lösenord</label>
+            <InputText id="password" type="password" class="form-control" @bind-Value="customer.Password" />
+            <ValidationMessage For="@(() => customer.Password)" />
+        </div>
+
+        <h5 class="mt-4">Address</h5>
+
+        <div class="row">
+            <div class="mb-3 col-md-6">
+                <label class="form-label">Land</label>
+                <InputText id="country" class="form-control" @bind-Value="customer.Address.Country" />
+            </div>
+            <div class="mb-3 col-md-6">
+                <label class="form-label">Stad</label>
+                <InputText id="city" class="form-control" @bind-Value="customer.Address.City" />
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Gatuadress</label>
+            <InputText id="address" class="form-control" @bind-Value="customer.Address.Address" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Postnummer</label>
+            <InputText id="postcode" class="form-control" @bind-Value="customer.Address.PostalCode" />
+            <ValidationMessage For="@(() => customer.Address.PostalCode)" />
+        </div>
+
+        <button id="RegisterButton" type="submit" class="btn btn-info text-light">Registrera</button>
+    </div>
+</EditForm>
+
+@code {
+    private CustomerDTO customer = new()
+        {
+            Address = new AddressInfoDTO()
+        };
+
+    private string errorMessage;
+
+    private async Task HandleValidSubmit()
+    {
+        errorMessage = null;
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/Customers/register", customer);
+            if (response.IsSuccessStatusCode)
+            {
+                NavigationManager.NavigateTo("/");
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                errorMessage = error;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Ett oväntat fel uppstod: " + ex.Message;
+        }
+    }
+}

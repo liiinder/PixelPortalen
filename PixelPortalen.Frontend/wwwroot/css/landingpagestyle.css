@@ -1,0 +1,88 @@
+﻿.image-container {
+    display: flex;
+    justify-content: center;
+    align-items: center; 
+    margin-bottom: 3.5rem;
+    height: 180px; 
+}
+
+.custom-gif {
+    width: 100%;
+    max-width: 400px;
+    height: auto;
+}
+
+.landing-container {
+    font-family: 'Press Start 2P', cursive;
+    color: #fff;
+    text-align: center;
+    padding: 4rem 0rem;
+}
+
+.title {
+    font-family: 'Press Start 2P', cursive;
+    color: #ff80ff;
+}
+
+h1.title {
+    font-size: 4rem;
+}
+
+.tagline {
+    font-size: 1.1rem;
+    color: #00ffd5;
+}
+
+/*.product-row {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    flex-wrap: nowrap;
+}*/
+
+.product-card {
+    background-color: #2d2d2d;
+    padding: 1rem;
+    height: auto;
+    border: 2px solid #444;
+    border-radius: 8px;
+    box-shadow: 0 0 2px #ff80ff;
+    display: flex;
+    flex-direction: column;
+}
+
+.product-card img {
+    width: 100%;
+    height: auto;
+    image-rendering: pixelated;
+    align-content: center;
+}
+
+.product-card h3 {
+    font-size: 0.7rem;
+    align-self: center;
+}
+
+.product-card p {
+    font-size: 0.7rem;
+}
+
+.product-card button {
+    background-color: #00ffd5;
+    color: #000;
+    border: none;
+    font-family: inherit;
+    font-size: 0.6rem;
+    cursor: pointer;
+    align-self: center;
+}
+
+.product-card button:hover {
+    background-color: #ff80ff;
+    color: white;
+    align-self: center;
+}
+
+.product-card:hover {
+    transform: scale(1.02);
+}

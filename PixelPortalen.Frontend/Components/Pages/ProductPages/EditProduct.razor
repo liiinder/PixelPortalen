@@ -1,0 +1,385 @@
+﻿@page "/editproduct"
+@page "/editproduct/{Id:int}"
+@using Microsoft.AspNetCore.Authorization
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@attribute [Authorize(Roles = "Admin")]
+
+<h2 class="title mt-4 text-center">@(isEdit ? "Redigera produkt" : "Lägg till ny produkt")</h2>
+
+@if (errorMessage != null)
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+<div class="modal" tabindex="-1" id="exampleModal">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark">
+            <div class="modal-header">
+                <h5 class="modal-title">@message</h5>
+                <button id="CloseModalButton" type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <InputText class="form-control" @bind-Value="nameOfinput" />
+            </div>
+            <div class="modal-footer">
+                @if (isNew is false)
+                {
+                    <button id="ModalRemoveButton" type="button" class="btn btn-danger" data-bs-dismiss="modal" @onclick="RemoveGenreCategory">Ta bort</button>
+                }
+                <button id="CancelModalButton" type="button" class="btn btn-secondary" data-bs-dismiss="modal">Avbryt</button>
+                <button id="SaveButton" type="button" class="btn btn-primary" data-bs-dismiss="modal" @onclick="SaveChanges">Spara</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<AuthorizeView Roles="Admin">
+    <Authorized>
+        <EditForm Model="product" OnValidSubmit="HandleValidSubmit" Context="editForm">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="pp-card p-3">
+
+            <div class="mb-3">
+                <label class="form-label">Namn</label>
+                <InputText id="name" class="form-control" @bind-Value="product.Name" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Kort Beskrivning</label>
+                <InputText id="shortDesc" class="form-control" @bind-Value="product.ShortDescription" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Utförlig Beskrivning</label>
+                <InputTextArea id="longDesc" class="form-control" @bind-Value="product.LongDescription" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Bildlänk</label>
+                <InputText id="imgPath" class="form-control" @bind-Value="product.ImagePath" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Pris</label>
+                <InputNumber id="price" class="form-control" @bind-Value="product.Price" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Lagerstatus</label>
+                <InputNumber id="stock" class="form-control" @bind-Value="product.Stock" />
+            </div>
+
+            <div class="mb-3 row">
+                <div class="col-6">
+                    <label class="form-label">Kategori</label>
+                    <InputSelect id="category" class="form-control" @bind-Value="selectedCategoryId">
+                        @foreach (var category in allCategories)
+                        {
+                            <option id="@category.Id" value="@category.Id">@category.Name</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="col-6 align-self-end">
+                    <button id="EditButton" type="button" class="btn btn-warning me-3 mt-2" data-bs-toggle="modal" data-bs-target="#exampleModal" @onclick="EditCategory">Redigera</button>
+                    <button id="NewCatButton" type="button" class="btn btn-secondary mt-2" data-bs-toggle="modal" data-bs-target="#exampleModal" @onclick="AddNewCategory">Ny kategori</button>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-6">
+                    <label class="form-label">Lägg till Genre</label>
+                    <InputSelect id="genre" class="form-control" @bind-Value="selectedGenreId">
+                        @foreach (var genre in allGenres)
+                        {
+                            <option id="@genre.Id" value="@genre.Id">@genre.Name</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="col-6 align-self-end">
+                    <button id="AddButton" @onclick="AddGenre" type="button" class="btn btn-info text-light me-3 mt-2">Lägg till</button>
+                    <button id="EditGenreButton" type="button" class="btn btn-warning me-3 mt-2" data-bs-toggle="modal" data-bs-target="#exampleModal" @onclick="EditGenre">Redigera</button>
+                    <button id="NewGenreButton" type="button" class="btn btn-secondary mt-2" data-bs-toggle="modal" data-bs-target="#exampleModal" @onclick="AddNewGenre">Ny genre</button>
+                </div>
+            </div>
+
+            <label>Aktiva Genres</label>
+            @if (selectedGenres.Count <= 0)
+            {
+                <div class="row mb-2">
+                    <div class="col-6">
+                        <div class="form-control bg-secondary border-secondary text-light">
+                            Inga valda genres
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                @foreach (var genre in selectedGenres)
+                {
+                    <div class="row mb-2">
+                        <div class="col-6">
+                            <div class="form-control bg-secondary border-secondary text-light">
+                                @genre.Name
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <button id="@("RemoveGenreId" + genre.Id)" @onclick="@(() => RemoveGenre(genre.Id))" type="button" class="btn btn-danger">Ta bort</button>
+                        </div>
+                    </div>
+                }
+            }
+
+            <button id="SubmitButton" class="btn btn-success mb-3 mt-1 me-3" type="submit">Spara</button>
+            @if (isEdit)
+            {
+                <button id="RemoveProductButton" class="btn btn-danger mb-3 mt-1" onclick="@(() => RemoveProduct(product.Id))">Ta bort produkt</button>
+            }
+            </div>
+        </EditForm>
+    </Authorized>
+</AuthorizeView>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private List<Category> allCategories = new();
+    private int selectedCategoryId;
+
+    private List<Genre> allGenres = new();
+    private int selectedGenreId;
+    private List<Genre> selectedGenres = new();
+
+    private Product product = new();
+    private string errorMessage;
+    private bool isEdit => Id.HasValue;
+
+    private string message;
+    private string nameOfinput;
+    private bool isGenre = false;
+    private bool isNew = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (isEdit)
+        {
+            try
+            {
+                product = await Http.GetFromJsonAsync<Product>($"api/product/{Id}");
+
+                if (product != null && product.Id != Id)
+                {
+                    product.Id = Id.Value;
+                }
+                selectedCategoryId = product.Category.Id;
+                selectedGenres.AddRange(product?.Genres);
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Problem med att ladda produkt: {ex.Message}";
+            }
+        }
+        await GetCategories();
+        await GetGenres();
+    }
+
+    private async Task GetCategories()
+    {
+        try
+        {
+            allCategories = await Http.GetFromJsonAsync<List<Category>>("api/category");
+            if (selectedCategoryId is 0)
+            {
+                if (product?.Category is not null)
+                {
+                    selectedCategoryId = product.Category.Id;
+                }
+                else
+                {
+                    selectedCategoryId = allCategories[0].Id;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Problem med att ladda kategorier: {ex.Message}";
+        }
+    }
+
+    private async Task GetGenres()
+    {
+        try
+        {
+            allGenres = await Http.GetFromJsonAsync<List<Genre>>("api/genre");
+            if (selectedGenreId is 0)
+            { 
+                selectedGenreId = allGenres[0].Id;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Problem med att ladda genres: {ex.Message}";
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            product.Genres = selectedGenres;
+            product.Category = allCategories.FirstOrDefault(c => c.Id == selectedCategoryId);
+
+            HttpResponseMessage response;
+            if (isEdit)
+            {
+                response = await Http.PutAsJsonAsync($"api/product/{product.Id}", product);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var body = await response.Content.ReadAsStringAsync();
+                    errorMessage = $"Misslyckades med att uppdatera produkt: {response.StatusCode}, {body}";
+                    return;
+                }
+            }
+            else
+            {
+                response = await Http.PostAsJsonAsync("api/product", product);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var body = await response.Content.ReadAsStringAsync();
+                    errorMessage = $"Misslyckades med att skapa produkt: {response.StatusCode}, {body}";
+                    return;
+                }
+            }
+
+            Navigation.NavigateTo("/products");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Problem med att spara produkt: {ex.Message}";
+        }
+    }
+
+    private async Task AddGenre()
+    {
+        var genre = allGenres.FirstOrDefault(x => x.Id == selectedGenreId);
+        var exists = selectedGenres.FirstOrDefault(x => x.Id == selectedGenreId);
+
+        if (exists is null)
+        {
+            selectedGenres.Add(genre);
+            StateHasChanged();
+        }
+    }
+
+    private async Task RemoveGenre(int id)
+    {
+        var genre = selectedGenres.FirstOrDefault(x => x.Id == id);
+        selectedGenres.Remove(genre);
+    }
+
+    private async Task AddNewGenre()
+    {
+        message = "Lägg till ny genre";
+        nameOfinput = "";
+        isGenre = true;
+        isNew = true;
+    }
+
+    private async Task EditGenre()
+    {
+        message = "Redigera genre";
+        nameOfinput = allGenres.FirstOrDefault(x => x.Id == selectedGenreId).Name;
+        isGenre = true;
+        isNew = false;
+    }
+
+    private async Task AddNewCategory() 
+    {
+        message = "Lägg till ny kategori";
+        isGenre = false;
+        isNew = true;
+        nameOfinput = "";
+    }
+
+    private async Task EditCategory()
+    {
+        message = "Redigera kategori";
+        nameOfinput = allCategories.FirstOrDefault(x => x.Id == selectedCategoryId).Name;
+        isGenre = false;
+        isNew = false;
+    }
+
+    private async Task SaveChanges()
+    {
+        HttpResponseMessage response;
+
+        try {
+            if (isGenre && isNew) // New Genre
+            {
+                response = await Http.PostAsJsonAsync($"api/genre/", nameOfinput);
+            }
+            else if (isGenre && !isNew) // Edit Genre
+            {
+                response = await Http.PutAsJsonAsync($"api/genre/{selectedGenreId}", nameOfinput);
+            }
+            else if (!isGenre && isNew) // New Category
+            {
+                response = await Http.PostAsJsonAsync($"api/category/", nameOfinput);
+            }
+            else if (!isGenre && !isNew) // Edit Category
+            {
+                response = await Http.PutAsJsonAsync($"api/category/{selectedCategoryId}", nameOfinput);
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Problem med att {message}: {ex.Message}";
+        }
+
+        if (isGenre) await GetGenres();
+        else await GetCategories();
+        
+        StateHasChanged();
+    }
+
+    private async Task RemoveGenreCategory()
+    {
+        if (isGenre) // Remove Genre
+        {
+            // Warning CASCADE DELETE ... Kommer ta bort alla produkter med valda kategori/genren
+            // await Http.DeleteAsync($"api/category/{selectedGenreId}");
+        }
+        else if (!isGenre) // Remove Category
+        {
+            // Warning CASCADE DELETE ... 
+            // await Http.DeleteAsync($"api/category/{selectedGenreId}");
+        }
+    }
+
+    private async Task RemoveProduct(int id)
+    {
+        try
+        {
+            HttpResponseMessage response;
+            if (isEdit)
+            {
+                response = await Http.DeleteAsync($"api/product/{product.Id}");
+                if (!response.IsSuccessStatusCode)
+                {
+                    var body = await response.Content.ReadAsStringAsync();
+                    errorMessage = $"Misslyckades med att uppdatera produkt: {response.StatusCode}, {body}";
+                    return;
+                }
+            }
+
+            Navigation.NavigateTo("/products", true);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Problem med att ta bort produkt: {ex.Message}";
+        }
+    }
+}

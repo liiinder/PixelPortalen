@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "New Profile",
+    "Projects": [
+      {
+        "Path": "PixelPortalen.Frontend\\PixelPortalen.Frontend.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "PixelPortalen.API\\PixelPortalen.API.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]
