@@ -1,7 +1,7 @@
-# Setup instructions
+# Setup Instructions
 
-1. Restore Database with PixelPortalen.Bak to your SQL database.
-2. Change the connection string in PixelPortalen/appsettings.json to match yours. Don't push/publish nonlocal SQL server information
+1. Restore the database with PixelPortalen.Bak to your SQL database.
+2. Change the connection string in PixelPortalen.API/appsettings.json to match yours. Don't push/publish nonlocal SQL server information
 3. Run the API and the Frontend program.cs files with your IDE (there is a "Start Both" setting).
 4. There is a test admin account for the site that you can use
 
@@ -12,21 +12,27 @@ Password: qwerty
 
 # PixelPortalen
 
-This project was our largest schoolproject where we got an assignment to work in group with 3 classes during 5 weeks to create a working webbshop from scratch. Our class that was focused on doing the fullstack work, one class specialized in testing (RobotFramework) and the last one focusing on .NET Cloud and the implementation on Azure. The participation on the Cloud group was probably the biggest letdown of the whole project but we worked hard with the testers.
+This was our largest school project where we got an to work in a group of 8 people from 3 classes during 5 weeks to create a working webbshop from scratch. Our class that was focused on doing the fullstack work, one class specialized in testing (RobotFramework) and the last one focusing on .NET Cloud and the implementation on Azure. The main focus was to work agile with scrum but with a presentation deadline it was easy to side track and try to implement everything from the [assignment](GemensamtProjekt-Introduktion2025.pdf). The participation on the Cloud group was probably the biggest letdown of the whole project with low presence and almost no communication, but we worked great with the testers. 
 
-# My effort in the project
+# My Focus
 
-I was one of the two that was a big part of leading the project and descided what to do and which direction to go. I also was the one presenting it on the last 2 days of the project.
+I was one of the two that was a big part of leading the project and decided what to do and which direction to go. I also was the one presenting it during the last 2 days of the project.
 
-My bigger programming focus/work on this page have been to set up the base for the API with the product related stuff like controller, repository, service, the generic repository and also the models/entities. Then for the frontend my main focus was more to clean up code and fix styles. But I also implemented the filter and pagination for the product page and cleaned up the sorting function. I also added the category/genre part to the add/edit product page which uses a generic modal but with the time used I'm not totally stoked about the method behind it. And the order part for the admin page and the "send shipping" functionality.
+My bigger programming focus/work on this page have been to set up the base for the API with the product related stuff like controller, repository, service, the generic repository and also the models/entities. Then for the frontend my main focus was more to clean up code and fix styles and code that others had already started on. But I also implemented the filter and pagination for the product page and cleaned up the sorting function. I also added the category/genre part to the add/edit product page which uses a generic modal but with the time used I'm not totally stoked about the method behind it. And the order part for the admin page and the "send shipping" functionality was my last addition to the page.
 
 # About
 
-Our API is built with ASP.NET MVC that connects with an SQL server. It uses a repository/service pattern and it has a generic repository for the most common CRUD operations. It also uses JWT tokens for authentication on some of the endpoints like `api/customers` requires you to be an admin.
+The whole project uses .NET 8 and our API is built with ASP.NET MVC that connects to an SQL server with EntityFramework.
+It uses a repository/service pattern and it has a generic repository for the most common CRUD operations.
 
-Frontend is a server-sided Blazor app that's using mostly bootstrap to get the style right, on top of that is also CSS. Like the backend we also uses a JWT token saved in localstorage to autorize/autenticate the users so the admin can see the admin stuff and the customers won't.
+Frontend is a server-sided Blazor app that's using mostly bootstrap to get the style right, on top of that is also uses CSS for the final touches.
 
-We got the name PixelPortalen in the assignment and we knew we wanted a pixelated style on the page and incorporate a portal into the logo. The neon color theme grew and we really liked the look of it.
+For authentication and authorization we use JWT tokens so when you login a JWT-token get saved to LocalStorage and the API endpoints like `api/customers` requires you to be logged in as an admin to send a response.
+And on the frontend we use it so that admin's can see the admin stuff and the customers won't and if a customer is logged in they can place an order.
+
+---
+
+For the assignment we got to make a webbshop for the fictional company "PixelPortalen" and we instantly knew we wanted a pixelated style on the page and incorporate a portal into the logo. The neon color theme grew and we really liked the look of it.
 Here is a screenshot of the landingpage where we show a gif of the logo, five randomized products and upcomming events.
 
 ![Homepage](Presentation/HomePage.jpg)
@@ -35,15 +41,15 @@ When you hover a product we added a zoom for it to feel more engaging and when y
 
 ![ProductPage](Presentation/ProductPage.jpg)
 
-One of the criterias for the webbshop was to filter the products by genres, sort it by price and name and here is our filter by genres. It lists all the genres. If we had more time I would have liked to add how many of each there is and when one genre is selected it shows how many that have the next and so on.
+One of the criterias for the webbshop was to filter the products by genres, sort it by price and name and here is our filter by genres. It lists all the genres and works as expected, if you click a genre or more you only get to see the products that matches all the active genres. If we had more time I would have liked to add how many of each there is and when one genre is selected it shows how many that have the next and so on.
 
 ![Filter](Presentation/FilterProduct.jpg)
 
-To make the app less dependent on developers for managing the products we added the possibility for the buyer/admin of the page to add and edit their own products/genres/categories.
+To make the app less dependent on developers for managing the products we added the possibility for the buyer/admin of the page to add and edit their own products/genres/categories with a simple form.
 
 ![AddEditProducts](Presentation/AddEditProduct.jpg)
 
-Another criteria was that the admin should be able to see placed orders, watch specific users and their history and current cart. I also added a functionality for the admin to mark unsent order as sent.
+Another criteria was that the admin should be able to see placed orders, watch specific users and their history and current cart. I also added a functionality for the admin to mark unsent order as sent to make it a bit more realistic.
 
 ![Admin](Presentation/AdminPage.jpg)
 
