@@ -1,6 +1,6 @@
 [
   {
-    "Name": "New Profile",
+    "Name": "Start Both",
     "Projects": [
       {
         "Path": "PixelPortalen.Frontend\\PixelPortalen.Frontend.csproj",

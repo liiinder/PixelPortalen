@@ -9,7 +9,15 @@ namespace PixelPortalen.Frontend.Auth
     {
         public override async Task<AuthenticationState> GetAuthenticationStateAsync()
         {
-            var token = (await localStorage.GetAsync<string>("authToken")).Value;
+            string? token = null;
+            try
+            {
+                token = (await localStorage.GetAsync<string>("authToken")).Value;
+            }
+            catch
+            {
+                MarkUserAsLoggedOut();
+            }
             var identity = string.IsNullOrEmpty(token) ? new ClaimsIdentity() : GetClaimsIdentity(token);
             var user = new ClaimsPrincipal(identity);
             return new AuthenticationState(user);

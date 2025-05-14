@@ -7,11 +7,14 @@
     </PropertyGroup>
 
     <ItemGroup>
-	    <ProjectReference Include="..\PixelPortalen.Shared\PixelPortalen.Shared.csproj" />
+      <Compile Remove="wwwroot\fonts\**" />
+      <Content Remove="wwwroot\fonts\**" />
+      <EmbeddedResource Remove="wwwroot\fonts\**" />
+      <None Remove="wwwroot\fonts\**" />
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="wwwroot\fonts\" />
+	    <ProjectReference Include="..\PixelPortalen.Shared\PixelPortalen.Shared.csproj" />
     </ItemGroup>
 
     <ItemGroup>

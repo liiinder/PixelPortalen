@@ -3,14 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.12.35521.163
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PixelPortalen.Frontend", "PixelPortalen.Frontend\PixelPortalen.Frontend.csproj", "{C4F8908E-DC88-4B94-949C-B9D47A99D875}"
-	ProjectSection(ProjectDependencies) = postProject
-		{2EDD277F-1276-4809-AC6A-9A09C5D8D504} = {2EDD277F-1276-4809-AC6A-9A09C5D8D504}
-	EndProjectSection
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PixelPortalen.API", "PixelPortalen.API\PixelPortalen.API.csproj", "{2EDD277F-1276-4809-AC6A-9A09C5D8D504}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PixelPortalen.Shared", "PixelPortalen.Shared\PixelPortalen.Shared.csproj", "{3D5C4312-40FB-4945-8424-46BF3FA54C1F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PixelPortalen.Frontend", "PixelPortalen.Frontend\PixelPortalen.Frontend.csproj", "{A40C27EE-7A00-4F63-969E-F7A7A7193D61}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -18,10 +15,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{C4F8908E-DC88-4B94-949C-B9D47A99D875}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C4F8908E-DC88-4B94-949C-B9D47A99D875}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C4F8908E-DC88-4B94-949C-B9D47A99D875}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C4F8908E-DC88-4B94-949C-B9D47A99D875}.Release|Any CPU.Build.0 = Release|Any CPU
 		{2EDD277F-1276-4809-AC6A-9A09C5D8D504}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{2EDD277F-1276-4809-AC6A-9A09C5D8D504}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2EDD277F-1276-4809-AC6A-9A09C5D8D504}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -30,6 +23,10 @@ Global
 		{3D5C4312-40FB-4945-8424-46BF3FA54C1F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3D5C4312-40FB-4945-8424-46BF3FA54C1F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3D5C4312-40FB-4945-8424-46BF3FA54C1F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A40C27EE-7A00-4F63-969E-F7A7A7193D61}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A40C27EE-7A00-4F63-969E-F7A7A7193D61}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A40C27EE-7A00-4F63-969E-F7A7A7193D61}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A40C27EE-7A00-4F63-969E-F7A7A7193D61}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
